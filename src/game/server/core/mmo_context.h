@@ -161,6 +161,7 @@ enum ETickState
 	ManaPotionRecast,
 	RefreshClanTitle,
 	RefreshNickLeveling,
+	LastSetSpectatorMode,
 	NUM_TICK,
 };
 
@@ -211,6 +212,7 @@ enum class ProfessionIdentifier : int
 	Miner,
 	Farmer,
 	Fisherman,
+	Loader,
 	NUM_PROFESSIONS,
 };
 
@@ -224,6 +226,7 @@ constexpr const char* GetProfessionName(ProfessionIdentifier profID) noexcept
 		case ProfessionIdentifier::Miner:     return "Miner";
 		case ProfessionIdentifier::Farmer:    return "Farmer";
 		case ProfessionIdentifier::Fisherman: return "Fisherman";
+		case ProfessionIdentifier::Loader:    return "Loader";
 		default:                              return "None";
 	}
 }
@@ -260,6 +263,7 @@ enum class ToplistType : int
 	GuildWealthy,
 	PlayerRating,
 	PlayerWealthy,
+	PlayerExpert,
 	NUM_TOPLIST_TYPES
 };
 
@@ -324,6 +328,7 @@ enum class ItemType : short
 	EquipPickaxe,
 	EquipRake,
 	EquipFishrod,
+	EquipGloves,
 	EquipArmor,
 	EquipEidolon,
 	EquipPotionHeal,
@@ -352,6 +357,7 @@ inline static ItemType GetItemTypeFromDBSet(const DBSet& dbset) noexcept
 	else if(dbset.hasSet("Equip pickaxe")) return ItemType::EquipPickaxe;
 	else if(dbset.hasSet("Equip rake")) return ItemType::EquipRake;
 	else if(dbset.hasSet("Equip fishrod")) return ItemType::EquipFishrod;
+	else if(dbset.hasSet("Equip gloves")) return ItemType::EquipGloves;
 	else if(dbset.hasSet("Equip armor")) return ItemType::EquipArmor;
 	else if(dbset.hasSet("Equip eidolon")) return ItemType::EquipEidolon;
 	else if(dbset.hasSet("Equip title")) return ItemType::EquipTitle;
@@ -377,6 +383,7 @@ constexpr const char* GetItemTypeName(ItemType type) noexcept
 		case ItemType::EquipPickaxe:        return "Pickaxe";
 		case ItemType::EquipRake:           return "Rake";
 		case ItemType::EquipFishrod:        return "Fish rod";
+		case ItemType::EquipGloves:         return "Gloves";
 		case ItemType::EquipArmor:          return "Armor";
 		case ItemType::EquipEidolon:        return "Eidolon";
 		case ItemType::EquipPotionHeal:     return "Potion HP";
@@ -732,6 +739,7 @@ enum class AttributeIdentifier : int
 	EidolonPWR = 19,             // Attribute identifier for eidolon power
 	GoldCapacity = 20,           // Attribute identifier for gold capacity
 	Patience = 21,               // Attribute identifier for fisherman
+	ProductCapacity = 22,        // Attribute identifier for loader
 	ATTRIBUTES_NUM,              // The number of total attributes
 };
 

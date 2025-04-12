@@ -30,14 +30,15 @@ public:
 		ENTTYPE_MULTIPLE_ORBITE,
 		ENTTYPE_EYES,
 		ENTTYPE_EYES_WALL,
+		ENTTYPE_FISHING_ROD,
 
 		// eidolon
 		ENTTYPE_EIDOLON_ITEM,
 
 		// quest
 		ENTTYPE_MOVE_TO_POINT,
+		ENTTYPE_DIR_NAVIGATOR,
 		ENTTYPE_PATH_NAVIGATOR,
-		ENTTYPE_PATH_FINDER,
 
 		// door's
 		ENTTYPE_DUNGEON_DOOR,
@@ -73,7 +74,6 @@ public:
 
 	ska::unordered_set<std::shared_ptr<CEntityGroup>> m_EntityGroups;
 	bool m_ResetRequested;
-	bool m_Paused;
 	CWorldCore m_Core;
 
 	CGameWorld();

@@ -796,10 +796,24 @@ void CGS::OnTickGlobal()
 	// send top messages with interval
 	if(Server()->Tick() % (Server()->TickSpeed() * g_Config.m_SvChatTopMessageInterval) == 0)
 	{
-		ToplistType RandomType = (ToplistType)(rand() % (int)ToplistType::NUM_TOPLIST_TYPES);
+		const auto RandomType = (ToplistType)(rand() % (int)ToplistType::NUM_TOPLIST_TYPES);
 		auto vResult = Core()->GetTopList(RandomType, 2);
 		if(vResult.size() < 2)
 			return;
+
+		if(RandomType == ToplistType::PlayerExpert)
+		{
+			Chat(-1, "-- {}", "Top Specialists in the Realm");
+			for(auto& [Iter, Top] : vResult)
+			{
+				auto* pAttribute = GetAttributeInfo((AttributeIdentifier)Top.Data["ID"].to_int());
+				auto* pNickname = Server()->GetAccountNickname(Top.Data["AccountID"].to_int());
+				auto Value = Top.Data["Value"].to_int();
+				Chat(-1, "{}: '{-} - {}({})'.", Top.Name, pNickname, Value, pAttribute->GetName());
+			}
+
+			return;
+		}
 
 		auto& Leader = vResult[1];
 		auto& Second = vResult[2];
@@ -954,6 +968,23 @@ void CGS::OnMessage(int MsgID, CUnpacker* pUnpacker, int ClientID)
 
 		if(MsgID == NETMSGTYPE_CL_SETSPECTATORMODE)
 		{
+			const auto pMsg = (CNetMsg_Cl_SetSpectatorMode*)pRawMsg;
+			int SpectatorID = clamp(pMsg->m_SpectatorId, (int)SPEC_FOLLOW, MAX_CLIENTS - 1);
+			if(SpectatorID >= 0 && !Server()->ReverseTranslate(SpectatorID, ClientID))
+				return;
+
+			auto& LastSetSpecSpectatorMode = pPlayer->m_aPlayerTick[LastSetSpectatorMode];
+			if(LastSetSpecSpectatorMode && LastSetSpecSpectatorMode + Server()->TickSpeed() / 4 > Server()->Tick())
+				return;
+
+			LastSetSpecSpectatorMode = Server()->Tick();
+			if(SpectatorID >= 0 && (!m_apPlayers[SpectatorID] || m_apPlayers[SpectatorID]->GetTeam() == TEAM_SPECTATORS))
+			{
+				Chat(ClientID, "Invalid spectator id used");
+				return;
+			}
+
+			pPlayer->m_SpectatorID = SpectatorID;
 			return;
 		}
 

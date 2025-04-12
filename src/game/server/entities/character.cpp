@@ -629,7 +629,7 @@ void CCharacter::HandleHookActions()
 	}
 }
 
-void CCharacter::AddMultipleOrbite(int Amount, int Type, int Subtype, int Orbitetype)
+void CCharacter::AddMultipleOrbite(bool Projectile, int Amount, int Type, int Subtype, int Orbitetype)
 {
 	if(!m_pMultipleOrbite)
 	{
@@ -637,15 +637,15 @@ void CCharacter::AddMultipleOrbite(int Amount, int Type, int Subtype, int Orbite
 		m_pMultipleOrbite->SetClientID(m_pPlayer->GetCID());
 	}
 
-	m_pMultipleOrbite->Add(Amount, Type, Subtype, Orbitetype);
+	m_pMultipleOrbite->Add(Projectile, Amount, Type, Projectile ? 0 : Subtype, Orbitetype);
 }
 
-void CCharacter::RemoveMultipleOrbite(int Amount, int Type, int Subtype, int Orbitetype) const
+void CCharacter::RemoveMultipleOrbite(bool Projectile, int Amount, int Type, int Subtype, int Orbitetype) const
 {
 	if(!m_pMultipleOrbite)
 		return;
 
-	m_pMultipleOrbite->Remove(Amount, Type, Subtype, Orbitetype);
+	m_pMultipleOrbite->Remove(Projectile, Amount, Type, Projectile ? 0 : Subtype, Orbitetype);
 }
 
 bool CCharacter::GiveWeapon(int WeaponID, int Ammo)
@@ -1207,7 +1207,7 @@ void CCharacter::Snap(int SnappingClient)
 	const bool BlockingInputFireWeapon = Server()->Input()->IsBlockedInputGroup(m_pPlayer->GetCID(), BLOCK_INPUT_FIRE);
 
 	// write down the m_Core
-	if(!m_ReckoningTick || GS()->m_World.m_Paused)
+	if(!m_ReckoningTick)
 	{
 		// no dead reckoning when paused because the client doesn't know
 		// how far to perform the reckoning
@@ -1769,14 +1769,14 @@ bool CCharacter::TryUseMana(int Mana)
 	if(m_Mana < Mana)
 	{
 		GS()->Broadcast(m_pPlayer->GetCID(), BroadcastPriority::GameWarning, 100, "Mana is required for the casting or continuation of this spell.");
-		return true;
+		return false;
 	}
 
 	m_Mana -= Mana;
 
 	GS()->MarkUpdatedBroadcast(m_pPlayer->GetCID());
 	AutoUseManaPotionIfNeeded();
-	return false;
+	return true;
 }
 
 void CCharacter::ChangePosition(vec2 NewPos)
