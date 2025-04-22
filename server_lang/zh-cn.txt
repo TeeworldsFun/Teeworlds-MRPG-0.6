@@ -7350,10 +7350,7 @@ The Ixal and various gangs of common bandits provide an unending supply of troub
 == 这座城市表面上一片祥和，其实大家都怀着不安的心情过日子。灵灾的后遗症也是引起大家不安的原因之一….
 
 - Not enough products to buy
-== - 商品不足无法购买
-
-Interval update tile text
-== 地块文本更新间隔
+== - 产品不足无法购买
 
 $dialog_quest191
 There is, however, more to the markets than buying and selling goods. Speak with Parsemontret, and listen well to his counsel.
@@ -7467,17 +7464,11 @@ info
 
 $skill_boost3
 % discount gold for craft item
-== 合成物品时%金币折扣
+== % 合成物品时黄金折扣
 
 $skill_name3
 Craft Discount
 == 合成折扣
-
-house
-== 房屋
-
-aether
-== 传送点
 
 Top 10 players by rank points
 == 分数最高的前10名玩家
