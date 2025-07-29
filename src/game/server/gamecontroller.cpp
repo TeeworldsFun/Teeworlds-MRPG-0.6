@@ -37,7 +37,8 @@ void IGameController::OnCharacterDeath(CPlayer* pVictim, CPlayer* pKiller, int W
 	g_EventListenerManager.Notify<IEventListener::Type::CharacterDeath>(pVictim, pKiller, Weapon);
 
 	// update rating
-	if(pVictim && pKiller && pVictim != pKiller && !pVictim->IsBot() && !pKiller->IsBot())
+	if(GS()->HasWorldFlag(WORLD_FLAG_RATING_SYSTEM) &&
+		pVictim && pKiller && pVictim != pKiller && !pVictim->IsBot() && !pKiller->IsBot())
 	{
 		auto& pKillerRating = pKiller->Account()->GetRatingSystem();
 		auto& pVictimRating = pVictim->Account()->GetRatingSystem();
@@ -49,13 +50,13 @@ void IGameController::OnCharacterDeath(CPlayer* pVictim, CPlayer* pKiller, int W
 	if(pVictim && !pVictim->IsBot())
 	{
 		pVictim->TryRemoveEidolon();
-		pVictim->GetTempData().m_LastKilledByWeapon = Weapon;
+		pVictim->GetSharedData().m_LastKilledByWeapon = Weapon;
 
 		// Clear all effects on the player
 		if(Weapon != WEAPON_WORLD)
 		{
 			pVictim->m_Effects.RemoveAll();
-			pVictim->UpdateTempData(0, 0);
+			pVictim->UpdateSharedCharacterData(0, 0);
 		}
 	}
 }
@@ -65,8 +66,9 @@ bool IGameController::OnCharacterSpawn(CCharacter* pChr)
 	g_EventListenerManager.Notify<IEventListener::Type::CharacterSpawn>(pChr->GetPlayer());
 
 	// Health
+	const int SpawnMana = GS()->HasWorldFlag(WORLD_FLAG_SPAWN_FULL_MANA) ? pChr->GetPlayer()->GetMaxMana() : 3;
 	pChr->IncreaseHealth(pChr->GetPlayer()->GetMaxHealth());
-	pChr->IncreaseMana(3);
+	pChr->IncreaseMana(SpawnMana);
 
 	// Weapons
 	const int MaximumAmmo = 10 + pChr->GetPlayer()->GetTotalAttributeValue(AttributeIdentifier::Ammo);
@@ -81,8 +83,9 @@ bool IGameController::OnCharacterSpawn(CCharacter* pChr)
 
 bool IGameController::OnCharacterBotSpawn(CCharacterBotAI* pChr)
 {
-	auto* pPlayerBot = dynamic_cast<CPlayerBot*>(pChr->GetPlayer());
+	g_EventListenerManager.Notify<IEventListener::Type::CharacterSpawn>(pChr->GetPlayer());
 
+	auto* pPlayerBot = dynamic_cast<CPlayerBot*>(pChr->GetPlayer());
 	const int MaxStartHP = pPlayerBot->GetTotalAttributeValue(AttributeIdentifier::HP);
 	const int MaxStartMP = pPlayerBot->GetTotalAttributeValue(AttributeIdentifier::MP);
 	pPlayerBot->InitBasicStats(MaxStartHP, MaxStartMP, MaxStartHP, MaxStartMP);
@@ -229,9 +232,8 @@ void IGameController::OnPlayerConnect(CPlayer* pPlayer)
 	const int ClientID = pPlayer->GetCID();
 	if(Server()->ClientIngame(ClientID) && pPlayer->GetCurrentWorldID() == GS()->GetWorldID())
 	{
-		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), pPlayer->GetTeam());
-		GS()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+		GS()->Console()->PrintFormat(IConsole::OUTPUT_LEVEL_DEBUG, "game", "team_join player='%d:%s' team=%d",
+			ClientID, Server()->ClientName(ClientID), pPlayer->GetTeam());
 		UpdateGameInfo(ClientID);
 	}
 }
@@ -241,9 +243,8 @@ void IGameController::OnPlayerDisconnect(CPlayer* pPlayer)
 	const int ClientID = pPlayer->GetCID();
 	if(Server()->ClientIngame(ClientID) && pPlayer->GetCurrentWorldID() == GS()->GetWorldID())
 	{
-		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", ClientID, Server()->ClientName(ClientID));
-		GS()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+		GS()->Console()->PrintFormat(IConsole::OUTPUT_LEVEL_STANDARD, "game", "leave player='%d:%s'",
+			ClientID, Server()->ClientName(ClientID));
 		GS()->Core()->SaveAccount(pPlayer, SAVE_POSITION);
 	}
 
@@ -270,8 +271,9 @@ void IGameController::Snap()
 	if(!pGameInfoEx)
 		return;
 
-	pGameInfoEx->m_Flags = GAMEINFOFLAG_GAMETYPE_PLUS | GAMEINFOFLAG_ALLOW_EYE_WHEEL | GAMEINFOFLAG_ALLOW_HOOK_COLL | GAMEINFOFLAG_ALLOW_ZOOM | GAMEINFOFLAG_PREDICT_VANILLA;
-	pGameInfoEx->m_Flags2 = GAMEINFOFLAG2_GAMETYPE_CITY | GAMEINFOFLAG2_ALLOW_X_SKINS | GAMEINFOFLAG2_HUD_DDRACE | GAMEINFOFLAG2_HUD_HEALTH_ARMOR | GAMEINFOFLAG2_HUD_AMMO;
+	pGameInfoEx->m_Flags = GAMEINFOFLAG_GAMETYPE_PLUS | GAMEINFOFLAG_ALLOW_EYE_WHEEL | GAMEINFOFLAG_ALLOW_HOOK_COLL | GAMEINFOFLAG_ALLOW_ZOOM;
+	pGameInfoEx->m_Flags2 = GAMEINFOFLAG2_GAMETYPE_CITY | GAMEINFOFLAG2_ALLOW_X_SKINS | GAMEINFOFLAG2_HUD_DDRACE
+		| GAMEINFOFLAG2_HUD_HEALTH_ARMOR | GAMEINFOFLAG2_HUD_AMMO | GAMEINFOFLAG2_NO_WEAK_HOOK;
 	pGameInfoEx->m_Version = GAMEINFO_CURVERSION;
 }
 
@@ -391,7 +393,7 @@ void IGameController::DoTeamChange(CPlayer* pPlayer)
 	const int ClientID = pPlayer->GetCID();
 	const int Team = pPlayer->GetTeam();
 
-	pPlayer->GetTempData().m_LastKilledByWeapon = WEAPON_WORLD;
+	pPlayer->GetSharedData().m_LastKilledByWeapon = WEAPON_WORLD;
 
 	char aBuf[128];
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' m_Team=%d", ClientID, Server()->ClientName(ClientID), Team);
