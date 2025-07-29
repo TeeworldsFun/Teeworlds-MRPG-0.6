@@ -7,7 +7,7 @@
 #include "game/server/core/components/quests/quest_manager.h"
 
 CEntityQuestAction::CEntityQuestAction(CGameWorld* pGameWorld, int ClientID, int MoveToIndex, CQuestStep* pStep)
-	: CEntity(pGameWorld, CGameWorld::ENTTYPE_MOVE_TO_POINT, {}, 32.f, ClientID), m_MoveToIndex(MoveToIndex)
+	: CEntity(pGameWorld, CGameWorld::ENTTYPE_QUEST_OBJECTIVE, {}, 32.f, ClientID), m_MoveToIndex(MoveToIndex)
 {
 	m_pStep = pStep;
 	if(m_pStep)
@@ -74,18 +74,23 @@ void CEntityQuestAction::Initialize()
 		if(!pPlayerBot)
 		{
 			const auto& DefeatMobInfo = pTaskData->m_DefeatMobInfo;
-			const int MobClientID = GS()->CreateBot(TYPE_BOT_QUEST_MOB, DefeatMobInfo.m_BotID, -1);
-			pPlayerBot = dynamic_cast<CPlayerBot*>(GS()->GetPlayer(MobClientID));
-
-			CQuestBotMobInfo data;
-			data.m_QuestID = m_pStep->m_Bot.m_QuestID;
-			data.m_QuestStep = m_pStep->m_Bot.m_StepPos;
-			data.m_MoveToStep = m_MoveToIndex;
-			data.m_AttributePower = DefeatMobInfo.m_AttributePower;
-			data.m_WorldID = DefeatMobInfo.m_WorldID;
-			data.m_Position = pTaskData->m_Position;
-			pPlayerBot->InitQuestBotMobInfo(data);
-			dbg_msg(PRINT_QUEST_PREFIX, "Creating a objective quest mob!");
+			if(pPlayerBot = GS()->CreateBot(TYPE_BOT_QUEST_MOB, DefeatMobInfo.m_BotID, -1))
+			{
+				CQuestBotMobInfo data;
+				data.m_QuestID = m_pStep->m_Bot.m_QuestID;
+				data.m_QuestStep = m_pStep->m_Bot.m_StepPos;
+				data.m_MoveToStep = m_MoveToIndex;
+				data.m_AttributePower = DefeatMobInfo.m_AttributePower;
+				data.m_WorldID = DefeatMobInfo.m_WorldID;
+				data.m_Position = pTaskData->m_Position;
+				pPlayerBot->InitQuestBotMobInfo(data);
+				dbg_msg(PRINT_QUEST_PREFIX, "Creating a objective quest mob!");
+			}
+			else
+			{
+				MarkForDestroy();
+				return;
+			}
 		}
 
 		pPlayerBot->GetQuestBotMobInfo().m_ActiveForClient[m_ClientID] = true;
@@ -229,11 +234,13 @@ void CEntityQuestAction::Snap(int SnappingClient)
 	if(m_ClientID != SnappingClient || !GetOwnerChar())
 		return;
 
-	auto& visualIdsGroup = GetSnappingGroupIds(VISUAL_GROUP);
-	for(auto& id : visualIdsGroup)
+	if(const auto* pvGroupIds = FindSnappingGroupIds(VISUAL_GROUP))
 	{
-		vec2 randomRangePos = random_range_pos(m_Pos, m_Radius);
-		GS()->SnapProjectile(SnappingClient, id, randomRangePos, { }, Server()->Tick() - 3, WEAPON_HAMMER, m_ClientID);
+		for(const auto& id : *pvGroupIds)
+		{
+			vec2 randomRangePos = random_range_pos(m_Pos, m_Radius);
+			GS()->SnapProjectile(SnappingClient, id, randomRangePos, { }, Server()->Tick() - 3, WEAPON_HAMMER, m_ClientID);
+		}
 	}
 }
 

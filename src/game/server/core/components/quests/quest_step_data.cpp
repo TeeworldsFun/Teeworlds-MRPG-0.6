@@ -3,7 +3,7 @@
 #include "quest_step_data.h"
 
 #include <game/server/gamecontext.h>
-#include <game/server/core/components/Inventory/InventoryManager.h>
+#include <game/server/core/components/inventory/inventory_manager.h>
 #include "quest_manager.h"
 
 #include <game/server/core/entities/items/drop_quest_items.h>
@@ -33,12 +33,10 @@ void CQuestStepBase::UpdateBot() const
 	const bool ActiveStepBot = IsActiveStep();
 	if(ActiveStepBot && !pPlayerBot)
 	{
-		dbg_msg(PRINT_QUEST_PREFIX, "CREATING QUEST BOT... (QID:%d)", m_Bot.m_QuestID);
 		pGS->CreateBot(TYPE_BOT_QUEST, m_Bot.m_BotID, m_Bot.m_ID);
 	}
 	else if(!ActiveStepBot && pPlayerBot)
 	{
-		dbg_msg(PRINT_QUEST_PREFIX, "REMOVING QUEST BOT... (QID:%d)", m_Bot.m_QuestID);
 		pPlayerBot->MarkForDestroy();
 	}
 }
@@ -251,7 +249,6 @@ void CQuestStep::UpdateNavigator()
 		{
 			delete m_pEntNavigator;
 			m_pEntNavigator = nullptr;
-			dbg_msg(PRINT_QUEST_PREFIX, "NAVIGATOR REMOVING... (QID:%d)", m_Bot.m_QuestID);
 		}
 
 		return;
@@ -264,7 +261,6 @@ void CQuestStep::UpdateNavigator()
 		if(!pNavigator->IsMarkedForDestroy())
 		{
 			m_pEntNavigator = pNavigator;
-			dbg_msg(PRINT_QUEST_PREFIX, "NAVIGATOR CREATING... (QID:%d)", m_Bot.m_QuestID);
 		}
 	}
 }
@@ -370,8 +366,6 @@ void CQuestStep::ClearObjectives()
 {
 	if(!m_vpEntitiesDefeatBotNavigator.empty() || !m_vpEntitiesMoveAction.empty())
 	{
-		dbg_msg(PRINT_QUEST_PREFIX, "CLEARING ACTION, NAVIGATOR IS DONE (QID:%d)", m_Bot.m_QuestID);
-
 		for(auto& pPair : m_vpEntitiesDefeatBotNavigator)
 			delete pPair.second;
 		for(auto& pPair : m_vpEntitiesMoveAction)
@@ -405,7 +399,7 @@ void CQuestStep::CreateVarietyTypesRequiredItems()
 		if(Type == QuestBotInfo::TaskRequiredItems::Type::PICKUP)
 		{
 			// check whether items are already available for pickup
-			for(const auto* pHh = (CDropQuestItem*)GS()->m_World.FindFirst(CGameWorld::ENTTYPE_QUEST_DROP); pHh; pHh = (CDropQuestItem*)pHh->TypeNext())
+			for(const auto* pHh = (CDropQuestItem*)GS()->m_World.FindFirst(CGameWorld::ENTTYPE_PICKUP_QUEST); pHh; pHh = (CDropQuestItem*)pHh->TypeNext())
 			{
 				if(pHh->m_ClientID == ClientID && pHh->m_QuestID == m_Bot.m_QuestID && pHh->m_ItemID == RequiredItem.GetID() && pHh->m_Step == m_Bot.m_StepPos)
 					return;
